@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="MasterEat icon">
+  
+<defs>
+  <linearGradient id="orangeSoft" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FF7A1A"/>
+    <stop offset="1" stop-color="#F97316"/>
+  </linearGradient>
+</defs>
+
+  <rect x="96" y="96" width="832" height="832" rx="210" fill="url(#orangeSoft)"/>
+  <path d="M282 670 V385 C282 320 360 312 396 380 L512 604 L628 380 C664 312 742 320 742 385 V670"
+        fill="none" stroke="#FFFFFF" stroke-width="108" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

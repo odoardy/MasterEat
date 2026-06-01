@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>MasterEat</display-name>
+
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file> <!-- la pagina che viene mostrata quando si accede alla radice del sito (HTML statico) -->
+    </welcome-file-list>
+
+    <servlet>
+        <servlet-name>MasterEatApi</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>jakarta.ws.rs.Application</param-name>
+            <param-value>it.univaq.mastereat.api.MasterEatApplication</param-value> <!-- classe di configurazione dell'applicazione REST (quella dove andrà a guardare Jersey) -->
+        </init-param>
+        <load-on-startup>1</load-on-startup> <!-- la servlet viene caricata all'avvio dell'applicazione, così è subito pronta a gestire le richieste API senza dover aspettare la prima richiesta per essere inizializzata -->
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MasterEatApi</servlet-name>
+        <url-pattern>/api/*</url-pattern> <!-- tutte le richieste che iniziano con /api/ saranno gestite dalla servlet di Jersey, cioè ServletContainer -->
+    </servlet-mapping>
+
+    <resource-ref>
+        <res-ref-name>jdbc/MasterEatDB</res-ref-name> <!-- nome logico della risorsa, usato nel codice Java per cercare la risorsa tramite JNDI -->
+        <res-type>javax.sql.DataSource</res-type>
+        <res-auth>Container</res-auth>
+        <res-sharing-scope>Shareable</res-sharing-scope>
+    </resource-ref>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
+</web-app>

@@ -1,0 +1,150 @@
+erDiagram
+    utenti {
+        BIGINT id PK
+        VARCHAR username UK
+        VARCHAR email UK
+        VARCHAR password_hash
+        ENUM ruolo
+        BOOLEAN attivo
+    }
+
+    sessioni_api {
+        BIGINT id PK
+        BIGINT id_utente FK
+        CHAR token_hash UK
+        DATETIME scade_il
+        DATETIME revocato_il
+    }
+
+    categorie_prodotto {
+        BIGINT id PK
+        VARCHAR nome UK
+        INT ordine_visualizzazione
+        BOOLEAN attiva
+    }
+
+    prodotti {
+        BIGINT id PK
+        BIGINT id_categoria FK
+        VARCHAR nome
+        DECIMAL prezzo_base
+        INT minuti_preparazione
+        BOOLEAN attivo
+    }
+
+    immagini_prodotto {
+        BIGINT id PK
+        BIGINT id_prodotto FK
+        VARCHAR percorso_file UK
+        VARCHAR tipo_contenuto
+        BOOLEAN principale
+    }
+
+    gruppi_caratteristiche {
+        BIGINT id PK
+        BIGINT id_prodotto FK
+        VARCHAR nome
+        BOOLEAN obbligatorio
+        BOOLEAN attivo
+    }
+
+    caratteristiche {
+        BIGINT id PK
+        BIGINT id_prodotto FK
+        BIGINT id_gruppo_caratteristiche FK
+        VARCHAR nome
+        DECIMAL differenza_prezzo
+        BOOLEAN selezionata_default
+        BOOLEAN attiva
+    }
+
+    ingredienti {
+        BIGINT id PK
+        VARCHAR nome UK
+        VARCHAR unita_misura
+        BOOLEAN allergene
+        BOOLEAN attivo
+    }
+
+    ingredienti_prodotto {
+        BIGINT id_prodotto PK, FK
+        BIGINT id_ingrediente PK, FK
+        DECIMAL quantita
+    }
+
+    ordini {
+        BIGINT id PK
+        BIGINT id_cliente FK
+        ENUM stato
+        DATETIME creato_il
+        DATETIME confermato_il
+        DATETIME orario_consegna_richiesto
+        INT minuti_consegna_stimati
+        DECIMAL distanza_consegna_km
+        DECIMAL prezzo_totale
+        VARCHAR indirizzo_consegna_snapshot
+        VARCHAR citta_consegna_snapshot
+        VARCHAR cap_consegna_snapshot
+        VARCHAR telefono_consegna_snapshot
+        DATETIME annullato_il
+        TEXT motivo_annullamento
+    }
+
+    righe_ordine {
+        BIGINT id PK
+        BIGINT id_ordine FK
+        BIGINT id_prodotto FK
+        VARCHAR nome_prodotto_snapshot
+        DECIMAL prezzo_base_snapshot
+        INT minuti_preparazione_snapshot
+        INT quantita
+        DECIMAL totale_riga
+    }
+
+    caratteristiche_riga_ordine {
+        BIGINT id PK
+        BIGINT id_riga_ordine FK
+        BIGINT id_caratteristica FK
+        BIGINT id_gruppo_caratteristiche_snapshot FK
+        VARCHAR nome_caratteristica_snapshot
+        DECIMAL differenza_prezzo_snapshot
+    }
+
+    storico_stati_ordine {
+        BIGINT id PK
+        BIGINT id_ordine FK
+        ENUM stato_precedente
+        ENUM stato_nuovo
+        BIGINT id_utente_modifica FK
+        DATETIME modificato_il
+    }
+
+    notifiche_email {
+        BIGINT id PK
+        BIGINT id_ordine FK
+        VARCHAR email_destinatario
+        ENUM tipo
+        VARCHAR oggetto
+        ENUM stato
+        DATETIME creata_il
+        DATETIME inviata_il
+        TEXT messaggio_errore
+    }
+
+    utenti ||--o{ sessioni_api : "apre"
+    utenti ||--o{ ordini : "effettua"
+    utenti o|--o{ storico_stati_ordine : "modifica"
+    categorie_prodotto o|--o{ prodotti : "classifica"
+    prodotti ||--o{ immagini_prodotto : "ha"
+    prodotti ||--o{ gruppi_caratteristiche : "definisce"
+    prodotti ||--o{ caratteristiche : "offre"
+    gruppi_caratteristiche o|--o{ caratteristiche : "raggruppa"
+    prodotti ||--o{ ingredienti_prodotto : "richiede"
+    ingredienti ||--o{ ingredienti_prodotto : "compone"
+    ordini ||--o{ righe_ordine : "contiene"
+    prodotti ||--o{ righe_ordine : "referenziato"
+    righe_ordine ||--o{ caratteristiche_riga_ordine : "snapshot"
+    caratteristiche ||--o{ caratteristiche_riga_ordine : "selezionata"
+    gruppi_caratteristiche o|--o{ caratteristiche_riga_ordine : "gruppo_snapshot"
+    ordini ||--o{ storico_stati_ordine : "traccia"
+    ordini ||--o{ notifiche_email : "genera"

@@ -1,0 +1,83 @@
+flowchart TD
+    Root["/"] --> Home["/home"]
+    Home --> Menu["/menu"]
+    Menu --> ProductDetail["/prodotti/{id}"]
+    Home --> Login["/login"]
+    Home --> Register["/registrazione"]
+    Register --> Login
+    Login --> Home
+    ProductDetail --> AddCart["POST /cliente/carrello/aggiungi"]
+
+    subgraph Public["Area pubblica"]
+        Home
+        Menu
+        ProductDetail
+        Login
+        Register
+    end
+
+    subgraph Customer["Area cliente"]
+        CustomerNavigation["Navigazione cliente"]
+        CustomerAccount["/cliente/account"]
+        CustomerProfile["/cliente/profilo"]
+        Cart["/cliente/carrello"]
+        Checkout["/cliente/checkout"]
+        Confirmed["/cliente/ordine-confermato"]
+        CustomerOrders["/cliente/ordini"]
+        CustomerOrderDetail["/cliente/ordini/{id}"]
+    end
+
+    subgraph Staff["Area personale"]
+        StaffNavigation["Navigazione personale"]
+        StaffOrders["/staff/ordini"]
+        StaffOrderDetail["/staff/ordini/{id}"]
+        StaffAdvance["POST /staff/ordini/{id}/stato"]
+    end
+
+    subgraph Owner["Area proprietario"]
+        OwnerNavigation["Navigazione proprietario"]
+        OwnerOrders["/proprietario/ordini"]
+        OwnerOrderDetail["/proprietario/ordini/{id}"]
+        OwnerStats["/proprietario/statistiche"]
+        OwnerStaff["/proprietario/personale"]
+        OwnerMenu["/proprietario/menu"]
+        OwnerProducts["/proprietario/menu/prodotti"]
+        OwnerProductDetail["/proprietario/menu/prodotti/{id}"]
+        OwnerImages["/proprietario/menu/prodotti/{id}/immagini"]
+        OwnerChars["/proprietario/menu/prodotti/{id}/caratteristiche"]
+        OwnerGroups["/proprietario/menu/prodotti/{id}/gruppi-caratteristiche"]
+        OwnerIngredients["/proprietario/menu/prodotti/{id}/ingredienti"]
+    end
+
+    Home -->|CLIENTE| CustomerNavigation
+    Home -->|PERSONALE| StaffNavigation
+    Home -->|PROPRIETARIO| OwnerNavigation
+
+    CustomerNavigation --> CustomerAccount
+    CustomerNavigation --> Cart
+    CustomerNavigation --> CustomerOrders
+
+    AddCart --> Cart
+    Cart --> Checkout
+    Checkout --> Confirmed
+    CustomerAccount --> CustomerProfile
+    CustomerAccount --> CustomerOrders
+    CustomerOrders --> CustomerOrderDetail
+    CustomerOrderDetail --> CustomerOrders
+
+    StaffNavigation --> StaffOrders
+    StaffOrders --> StaffOrderDetail
+    StaffOrderDetail --> StaffAdvance
+    StaffAdvance --> StaffOrderDetail
+
+    OwnerNavigation --> OwnerOrders
+    OwnerNavigation --> OwnerStats
+    OwnerNavigation --> OwnerMenu
+    OwnerNavigation --> OwnerStaff
+    OwnerOrders --> OwnerOrderDetail
+    OwnerMenu --> OwnerProducts
+    OwnerProducts --> OwnerProductDetail
+    OwnerProductDetail --> OwnerImages
+    OwnerProductDetail --> OwnerChars
+    OwnerProductDetail --> OwnerGroups
+    OwnerProductDetail --> OwnerIngredients

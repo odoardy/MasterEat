@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+    <title id="title">Piatto MasterEat</title>
+    <desc id="desc">Illustrazione placeholder di un piatto caldo</desc>
+    <rect width="640" height="480" fill="#fff1df"/>
+    <circle cx="320" cy="250" r="145" fill="#ffffff"/>
+    <circle cx="320" cy="250" r="112" fill="#f26b21" opacity="0.12"/>
+    <path d="M220 260c42-82 152-98 220-34 22 21 16 58-13 71-49 23-102 25-158 8-31-10-64-16-49-45z" fill="#f26b21"/>
+    <path d="M247 248c32-36 86-45 131-22 14 7 9 29-6 29h-116c-10 0-15-7-9-7z" fill="#1f7a57"/>
+    <circle cx="279" cy="282" r="15" fill="#ffffff"/>
+    <circle cx="351" cy="280" r="12" fill="#ffffff"/>
+    <path d="M158 354h324" stroke="#c94f12" stroke-width="16" stroke-linecap="round"/>
+</svg>

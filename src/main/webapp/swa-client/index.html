@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MasterEat - Client SWA</title>
+    <link rel="icon" href="../assets/img/logo/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/img/logo/mastereat-favicon-32.png">
+    <link rel="stylesheet" href="style.css">
+    <!-- defer carica app.js dopo il parsing dell'HTML, cosi gli elementi della pagina esistono gia. -->
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <header class="page-header">
+        <h1>MasterEat - Client SWA</h1>
+        <p>Client JavaScript semplice per testare le principali API RESTful del servizio MasterEat.</p>
+    </header>
+
+    <main class="layout">
+        <!-- Ogni pannello sotto corrisponde a un piccolo test manuale verso un gruppo di endpoint REST. -->
+        <section class="panel" aria-labelledby="config-title">
+            <h2 id="config-title">1. Configurazione</h2>
+            <form id="configForm" class="form-grid">
+                <label for="baseUrl">Base URL API</label>
+                <input id="baseUrl" name="baseUrl" type="text" value="../api" autocomplete="off">
+                <button type="submit">Salva configurazione</button>
+            </form>
+            <p class="hint">Default: <code>../api</code>. Se il client è aperto da <code>/MasterEat/swa-client/</code>, le chiamate arrivano a <code>/MasterEat/api</code>.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="auth-title">
+            <h2 id="auth-title">2. Autenticazione</h2>
+            <p class="endpoint"><strong>POST</strong> <code>/auth/login</code> <span class="badge badge-public">Pubblico</span></p>
+            <p class="endpoint"><strong>POST</strong> <code>/auth/logout</code> <span class="badge badge-protected">Protetto</span></p>
+            <p class="hint">Utenti seed disponibili:</p>
+            <table class="seed-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Ruolo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>test_cliente</code></td>
+                        <td><code>password</code></td>
+                        <td>CLIENTE</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_staff</code></td>
+                        <td><code>password</code></td>
+                        <td>PERSONALE</td>
+                    </tr>
+                    <tr>
+                        <td><code>test_owner</code></td>
+                        <td><code>password</code></td>
+                        <td>PROPRIETARIO</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <form id="loginForm" class="form-grid" autocomplete="off">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" autocomplete="off">
+
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="off">
+
+                <div class="button-row">
+                    <button type="submit">Login</button>
+                    <button id="logoutButton" type="button" class="secondary">Logout</button>
+                    <button id="clearTokenButton" type="button" class="secondary">Pulisci token</button>
+                </div>
+            </form>
+
+            <!-- Questa area viene aggiornata da app.js dopo login, logout o pulizia locale del token. -->
+            <div class="auth-state">
+                <h3>Token corrente</h3>
+                <pre id="currentToken" class="token-output">Nessun token salvato</pre>
+
+                <h3>Utente corrente</h3>
+                <dl id="currentUser" class="user-data">
+                    <dt>Username</dt>
+                    <dd>-</dd>
+                    <dt>ID utente</dt>
+                    <dd>-</dd>
+                    <dt>Ruolo</dt>
+                    <dd>-</dd>
+                </dl>
+            </div>
+        </section>
+
+        <section class="panel group-panel" aria-labelledby="catalog-title">
+            <h2 id="catalog-title">3. Catalogo</h2>
+
+            <div class="operation">
+                <h3>Menu completo</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/menu</code> <span class="badge badge-public">Pubblico</span></p>
+                <button id="loadMenuButton" type="button">Carica menu</button>
+            </div>
+
+            <div class="operation">
+                <h3>Ricerca prodotti</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/prodotti?nome=&amp;prezzoMin=&amp;prezzoMax=</code> <span class="badge badge-public">Pubblico</span></p>
+                <p class="hint">I parametri vuoti non vengono inviati.</p>
+                <form id="productsForm" class="form-grid">
+                    <label for="productName">Nome</label>
+                    <input id="productName" name="nome" type="text" placeholder="es. pizza">
+
+                    <label for="priceMin">Prezzo minimo</label>
+                    <input id="priceMin" name="prezzoMin" type="number" min="0" step="0.01" placeholder="es. 6.00">
+
+                    <label for="priceMax">Prezzo massimo</label>
+                    <input id="priceMax" name="prezzoMax" type="number" min="0" step="0.01" placeholder="es. 8.50">
+
+                    <button type="submit">Cerca prodotti</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Dettaglio prodotto</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/prodotti/{id}</code> <span class="badge badge-public">Pubblico</span></p>
+                <form id="productDetailForm" class="form-grid">
+                    <label for="productDetailId">ID prodotto</label>
+                    <input id="productDetailId" name="id" type="number" min="1" step="1" placeholder="es. 1">
+                    <button type="submit">Carica dettaglio</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Caratteristiche prodotto</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/prodotti/{idProdotto}/caratteristiche</code> <span class="badge badge-public">Pubblico</span></p>
+                <form id="productCharacteristicsForm" class="form-grid">
+                    <label for="characteristicsProductId">ID prodotto</label>
+                    <input id="characteristicsProductId" name="idProdotto" type="number" min="1" step="1" placeholder="es. 1">
+                    <button type="submit">Carica caratteristiche</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Ingredienti prodotto</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/prodotti/{idProdotto}/ingredienti</code> <span class="badge badge-protected">Protetto</span></p>
+                <p class="notice">Usare <code>test_staff</code> o <code>test_owner</code>.</p>
+                <form id="productIngredientsForm" class="form-grid">
+                    <label for="ingredientsProductId">ID prodotto</label>
+                    <input id="ingredientsProductId" name="idProdotto" type="number" min="1" step="1" placeholder="es. 1">
+                    <button type="submit">Carica ingredienti</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="panel group-panel" aria-labelledby="customer-orders-title">
+            <h2 id="customer-orders-title">4. Ordini cliente</h2>
+            <p class="notice">Queste operazioni richiedono un token CLIENTE e alcune modificano dati reali.</p>
+
+            <div class="operation">
+                <h3>Crea ordine in bozza</h3>
+                <p class="endpoint"><strong>POST</strong> <code>/ordini</code> <span class="badge badge-protected">Protetto</span> <span class="badge badge-mutating">Modifica dati</span></p>
+                <button id="createOrderButton" type="button" class="warning">Crea ordine</button>
+            </div>
+
+            <div class="operation">
+                <h3>Aggiungi prodotto all'ordine</h3>
+                <p class="endpoint"><strong>POST</strong> <code>/ordini/{idOrdine}/prodotti</code> <span class="badge badge-protected">Protetto</span> <span class="badge badge-mutating">Modifica dati</span></p>
+                <form id="addOrderProductForm" class="form-grid">
+                    <label for="addProductOrderId">ID ordine</label>
+                    <input id="addProductOrderId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+
+                    <label for="addProductProductId">ID prodotto</label>
+                    <input id="addProductProductId" name="idProdotto" type="number" min="1" step="1" placeholder="es. 1">
+
+                    <label for="addProductQuantity">Quantita</label>
+                    <input id="addProductQuantity" name="quantita" type="number" min="1" step="1" value="1">
+
+                    <label for="addProductCharacteristics">Caratteristiche</label>
+                    <input id="addProductCharacteristics" name="caratteristiche" type="text" placeholder="es. 2,4,7">
+
+                    <button type="submit" class="warning">Aggiungi prodotto</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Prodotti nell'ordine</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/ordini/{idOrdine}/prodotti</code> <span class="badge badge-protected">Protetto</span></p>
+                <form id="orderProductsForm" class="form-grid">
+                    <label for="orderProductsId">ID ordine</label>
+                    <input id="orderProductsId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+                    <button type="submit">Carica righe</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Totale ordine</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/ordini/{idOrdine}/totale</code> <span class="badge badge-protected">Protetto</span></p>
+                <form id="orderTotalForm" class="form-grid">
+                    <label for="orderTotalId">ID ordine</label>
+                    <input id="orderTotalId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+                    <button type="submit">Calcola totale</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Tempo consegna</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/ordini/{idOrdine}/tempo-consegna</code> <span class="badge badge-protected">Protetto</span></p>
+                <form id="orderTimeForm" class="form-grid">
+                    <label for="orderTimeId">ID ordine</label>
+                    <input id="orderTimeId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+                    <button type="submit">Calcola tempo</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Conferma ordine</h3>
+                <p class="endpoint"><strong>POST</strong> <code>/ordini/{idOrdine}/conferma</code> <span class="badge badge-protected">Protetto</span> <span class="badge badge-mutating">Modifica dati</span></p>
+                <form id="confirmOrderForm" class="form-grid">
+                    <label for="confirmOrderId">ID ordine</label>
+                    <input id="confirmOrderId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+                    <button type="submit" class="warning">Conferma ordine</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Annullamento ordine</h3>
+                <p class="endpoint"><strong>DELETE</strong> <code>/ordini/{idOrdine}</code> <span class="badge badge-protected">Protetto</span> <span class="badge badge-mutating">Modifica dati</span></p>
+                <p class="notice">Annulla l'ordine impostando lo stato ANNULLATO. Il record resta nel database.</p>
+                <form id="cancelForm" class="form-grid">
+                    <label for="cancelOrderId">ID ordine</label>
+                    <input id="cancelOrderId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+                    <button type="submit" class="danger">Annulla ordine</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="panel group-panel" aria-labelledby="staff-title">
+            <h2 id="staff-title">5. Staff / Proprietario</h2>
+            <p class="notice">Usare <code>test_staff</code> o <code>test_owner</code>. Con un utente CLIENTE alcune risposte attese sono <strong>403 Forbidden</strong>.</p>
+
+            <div class="operation">
+                <h3>Ordini filtrati</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/ordini?stato=&amp;dataDa=&amp;dataA=</code> <span class="badge badge-protected">Protetto</span></p>
+                <form id="ordersForm" class="form-grid">
+                    <label for="orderStatus">Stato</label>
+                    <select id="orderStatus" name="stato">
+                        <option value="">Tutti gli stati operativi</option>
+                        <option value="BOZZA">BOZZA</option>
+                        <option value="INSERITO">INSERITO</option>
+                        <option value="IN_PREPARAZIONE">IN_PREPARAZIONE</option>
+                        <option value="PRONTO">PRONTO</option>
+                        <option value="IN_CONSEGNA">IN_CONSEGNA</option>
+                        <option value="CONSEGNATO">CONSEGNATO</option>
+                        <option value="ANNULLATO">ANNULLATO</option>
+                    </select>
+
+                    <label for="dateFrom">Data da</label>
+                    <input id="dateFrom" name="dataDa" type="date">
+
+                    <label for="dateTo">Data a</label>
+                    <input id="dateTo" name="dataA" type="date">
+
+                    <button type="submit">Cerca ordini</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Aggiorna stato ordine</h3>
+                <p class="endpoint"><strong>PUT</strong> <code>/ordini/{idOrdine}/stato</code> <span class="badge badge-protected">Protetto</span> <span class="badge badge-mutating">Modifica dati</span></p>
+                <form id="updateOrderStatusForm" class="form-grid">
+                    <label for="statusOrderId">ID ordine</label>
+                    <input id="statusOrderId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+
+                    <label for="newOrderStatus">Nuovo stato</label>
+                    <select id="newOrderStatus" name="nuovoStato">
+                        <option value="IN_PREPARAZIONE">IN_PREPARAZIONE</option>
+                        <option value="PRONTO">PRONTO</option>
+                        <option value="IN_CONSEGNA">IN_CONSEGNA</option>
+                        <option value="CONSEGNATO">CONSEGNATO</option>
+                    </select>
+
+                    <button type="submit" class="warning">Aggiorna stato</button>
+                </form>
+            </div>
+
+            <div class="operation">
+                <h3>Operatori ordine</h3>
+                <p class="endpoint"><strong>GET</strong> <code>/ordini/{idOrdine}/operatori</code> <span class="badge badge-protected">Protetto</span></p>
+                <form id="orderOperatorsForm" class="form-grid">
+                    <label for="operatorsOrderId">ID ordine</label>
+                    <input id="operatorsOrderId" name="idOrdine" type="number" min="1" step="1" placeholder="es. 10">
+                    <button type="submit">Carica operatori</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Output unico: app.js normalizza qui sia risposte API sia errori/azioni locali. -->
+        <section id="outputPanel" class="panel output-panel" aria-labelledby="output-title">
+            <h2 id="output-title">6. Output</h2>
+            <div id="resultStatus" class="result-status idle">Nessuna richiesta eseguita</div>
+            <pre id="resultOutput" class="result-output">Usa uno dei pulsanti sopra per inviare una richiesta.</pre>
+        </section>
+    </main>
+</body>
+</html>

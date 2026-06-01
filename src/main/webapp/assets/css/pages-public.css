@@ -1,0 +1,183 @@
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+    gap: 42px;
+    align-items: center;
+    min-height: 520px;
+    padding: 52px 0 68px;
+}
+
+.hero__copy {
+    max-width: 660px;
+}
+
+.hero__lead,
+.page-heading p,
+.section__header p {
+    max-width: 650px;
+    color: var(--color-muted);
+    font-size: 1.08rem;
+}
+
+.hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.hero__visual {
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-card);
+    background: var(--color-surface-warm);
+    box-shadow: var(--shadow-soft);
+    min-height: 380px;
+    overflow: hidden;
+}
+
+.hero__visual img {
+    width: min(92%, 480px);
+    height: auto;
+}
+
+.hero__visual--icon {
+    padding: 34px;
+}
+
+.hero__visual .hero__logo-mark {
+    width: min(78%, 360px);
+}
+
+.service-hours__content {
+    display: grid;
+    gap: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    box-shadow: 0 10px 30px rgba(84, 51, 24, 0.08);
+    padding: 20px;
+}
+
+.service-hours__content p {
+    margin: 0;
+    color: var(--color-muted);
+    font-weight: 700;
+}
+
+.service-hours__list {
+    display: grid;
+    gap: 8px;
+}
+
+.service-hours__list p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    align-items: baseline;
+    margin: 0;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 8px;
+}
+
+.service-hours__list strong {
+    min-width: 72px;
+    color: var(--color-text);
+    font-weight: 900;
+}
+
+.service-hours__list span {
+    color: var(--color-text);
+    font-size: 1.08rem;
+    font-weight: 800;
+}
+
+.page-heading {
+    padding: 28px 0 24px;
+}
+
+.page-heading h1 {
+    max-width: 16ch;
+    font-size: clamp(2.3rem, 7vw, 4.5rem);
+}
+
+.menu-category {
+    border-top: 1px solid var(--color-border);
+}
+
+.product-detail {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.1fr);
+    gap: 34px;
+    padding: 22px;
+}
+
+.product-detail__media {
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--color-surface-warm);
+}
+
+.product-detail__media img {
+    width: 100%;
+    height: 100%;
+    min-height: 430px;
+    object-fit: cover;
+}
+
+.product-detail__content {
+    align-self: center;
+    padding: 10px 10px 10px 0;
+}
+
+.product-detail__content h1 {
+    max-width: 14ch;
+    font-size: clamp(2.1rem, 6vw, 4rem);
+}
+
+.product-detail__description {
+    color: var(--color-muted);
+    font-size: 1.1rem;
+}
+
+.product-detail__price {
+    color: var(--color-primary-strong);
+    font-size: 1.45rem;
+    font-weight: 900;
+}
+
+.detail-section {
+    margin-top: 28px;
+}
+
+.detail-section h2 {
+    margin-bottom: 14px;
+    font-size: 1.28rem;
+}
+
+.option-list {
+    display: grid;
+    gap: 10px;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 13px 14px;
+}
+
+.option-item p {
+    margin: 4px 0 0;
+    color: var(--color-muted);
+}
+
+.option-item span {
+    color: var(--color-accent);
+    font-weight: 900;
+    white-space: nowrap;
+}

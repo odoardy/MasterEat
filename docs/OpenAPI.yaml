@@ -1,0 +1,1685 @@
+openapi: 3.0.3
+info:
+  title: MasterEat API
+  version: 1.0.0
+  description: |
+    Specifica OpenAPI delle API REST implementate in MasterEat.
+
+    Le API sotto `/api/*` sono protette da un filtro CORS dedicato che abilita
+    anche client JavaScript esterni. Le richieste preflight `OPTIONS` ricevono
+    `204 No Content`; gli header ammessi sono `Authorization`, `Content-Type`
+    e `Accept`. Non è previsto supporto a credenziali cross-origin basate su
+    cookie.
+
+    Il login restituisce un token interno. Gli endpoint protetti richiedono
+    l'header `Authorization: Bearer <token>`. Il codice accetta anche l'header
+    `Authentication` con il token non prefissato, ma `Authorization` è il
+    formato documentato.
+
+    Gli stati ordine gestiti sono `BOZZA`, `INSERITO`, `IN_PREPARAZIONE`,
+    `PRONTO`, `IN_CONSEGNA`, `CONSEGNATO`, `ANNULLATO`. Le transizioni
+    operative sono progressive: `INSERITO -> IN_PREPARAZIONE -> PRONTO ->
+    IN_CONSEGNA -> CONSEGNATO`.
+
+    `DELETE /ordini/{idOrdine}` effettua un annullamento logico impostando lo
+    stato ad `ANNULLATO`, non una cancellazione fisica.
+servers:
+  - url: http://localhost:8080/MasterEat/api
+    description: Server locale Tomcat con WAR MasterEat e servlet mapping /api/*
+tags:
+  - name: Autenticazione
+    description: Login/logout e gestione del token interno.
+  - name: Menu
+    description: Lettura pubblica del menu.
+  - name: Prodotti
+    description: Ricerca e dettagli dei prodotti pubblici.
+  - name: Ordini
+    description: Creazione, righe, totale, tempo, conferma, stato e annullamento degli ordini.
+  - name: Utenti
+    description: Consultazione degli ordini associati a un utente.
+  - name: Ingredienti
+    description: Dati interni di preparazione dei prodotti.
+  - name: Caratteristiche
+    description: Gestione e disattivazione delle caratteristiche associate ai prodotti.
+  - name: Diagnostica
+    description: Endpoint semplici per verifiche applicative e database.
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Autenticazione
+      summary: 1 - Login utente
+      description: |
+        Endpoint pubblico. Autentica un utente attivo tramite username e password
+        e restituisce un token interno da usare negli endpoint protetti.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              cliente:
+                summary: Login cliente seed
+                value:
+                  username: test_cliente
+                  password: password
+              personale:
+                summary: Login personale seed
+                value:
+                  username: test_staff
+                  password: password
+              proprietario:
+                summary: Login proprietario seed
+                value:
+                  username: test_owner
+                  password: password
+      responses:
+        '200':
+          description: Login riuscito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                cliente:
+                  value:
+                    token: o4JzVq2Xn1_Lc3m9fA0sB7yKp8QhRdEuT6wZaNcMxY
+                    idUtente: 6
+                    username: test_cliente
+                    ruolo: CLIENTE
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/logout:
+    post:
+      tags:
+        - Autenticazione
+      summary: 1 - Logout utente
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`, `PERSONALE`, `PROPRIETARIO`. Invalida la
+        sessione associata al token corrente.
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Logout riuscito. Nessun contenuto restituito.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /menu:
+    get:
+      tags:
+        - Menu
+      summary: 2 - Lettura menu completo
+      description: |
+        Endpoint pubblico. Restituisce il menu organizzato per categorie attive,
+        includendo solo prodotti visibili e caratteristiche attive.
+      operationId: getMenu
+      responses:
+        '200':
+          description: Menu pubblico.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MenuPubblicoResponse'
+              examples:
+                menu:
+                  value:
+                    categorie:
+                      - id: 1
+                        nome: Pizze
+                        descrizione: Pizze classiche e speciali
+                        prodotti:
+                          - id: 1
+                            nome: Pizza Margherita
+                            descrizione: Pizza con pomodoro, mozzarella e basilico.
+                            prezzoBase: 6.50
+                            immagini: []
+                            caratteristiche:
+                              - id: 1
+                                nome: Impasto normale
+                                descrizione: Impasto classico
+                                differenzaPrezzo: 0.00
+                                selezionataDefault: true
+                              - id: 2
+                                nome: Impasto integrale
+                                descrizione: Impasto con farina integrale
+                                differenzaPrezzo: 1.00
+                                selezionataDefault: false
+                          - id: 2
+                            nome: Pizza Diavola
+                            descrizione: Pizza con pomodoro, mozzarella e salame piccante.
+                            prezzoBase: 8.00
+                            immagini: []
+                            caratteristiche:
+                              - id: 4
+                                nome: Impasto normale
+                                descrizione: Impasto classico
+                                differenzaPrezzo: 0.00
+                                selezionataDefault: true
+                              - id: 5
+                                nome: Impasto integrale
+                                descrizione: Impasto con farina integrale
+                                differenzaPrezzo: 1.00
+                                selezionataDefault: false
+                              - id: 6
+                                nome: Extra piccante
+                                descrizione: Aggiunta di peperoncino extra
+                                differenzaPrezzo: 0.50
+                                selezionataDefault: false
+                      - id: 2
+                        nome: Bevande
+                        descrizione: Bibite e bevande
+                        prodotti:
+                          - id: 3
+                            nome: Acqua naturale
+                            descrizione: Bottiglia di acqua naturale da 50cl.
+                            prezzoBase: 1.00
+                            immagini: []
+                            caratteristiche: []
+                    prodottiSenzaCategoria: []
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /prodotti:
+    get:
+      tags:
+        - Prodotti
+      summary: 3 - Ricerca prodotti
+      description: |
+        Endpoint pubblico. Senza query string restituisce tutti i prodotti
+        visibili. Con `nome`, `prezzoMin` o `prezzoMax` esegue una ricerca sui
+        prodotti attivi e sulle categorie attive.
+      operationId: getProdotti
+      parameters:
+        - name: nome
+          in: query
+          required: false
+          description: Filtro case-insensitive sul nome del prodotto.
+          schema:
+            type: string
+          example: pizza
+        - name: prezzoMin
+          in: query
+          required: false
+          description: Prezzo base minimo incluso. Deve essere maggiore o uguale a 0.
+          schema:
+            type: number
+            format: double
+            minimum: 0
+          example: 6.00
+        - name: prezzoMax
+          in: query
+          required: false
+          description: Prezzo base massimo incluso. Deve essere maggiore o uguale a 0.
+          schema:
+            type: number
+            format: double
+            minimum: 0
+          example: 8.50
+      responses:
+        '200':
+          description: Elenco prodotti pubblici.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProdottoPubblicoResponse'
+              examples:
+                risultati:
+                  value:
+                    - id: 1
+                      nome: Pizza Margherita
+                      descrizione: Pizza con pomodoro, mozzarella e basilico.
+                      prezzoBase: 6.50
+                      immagini: []
+                      caratteristiche:
+                        - id: 1
+                          nome: Impasto normale
+                          descrizione: Impasto classico
+                          differenzaPrezzo: 0.00
+                          selezionataDefault: true
+                        - id: 2
+                          nome: Impasto integrale
+                          descrizione: Impasto con farina integrale
+                          differenzaPrezzo: 1.00
+                          selezionataDefault: false
+                    - id: 2
+                      nome: Pizza Diavola
+                      descrizione: Pizza con pomodoro, mozzarella e salame piccante.
+                      prezzoBase: 8.00
+                      immagini: []
+                      caratteristiche:
+                        - id: 4
+                          nome: Impasto normale
+                          descrizione: Impasto classico
+                          differenzaPrezzo: 0.00
+                          selezionataDefault: true
+                        - id: 5
+                          nome: Impasto integrale
+                          descrizione: Impasto con farina integrale
+                          differenzaPrezzo: 1.00
+                          selezionataDefault: false
+                        - id: 6
+                          nome: Extra piccante
+                          descrizione: Aggiunta di peperoncino extra
+                          differenzaPrezzo: 0.50
+                          selezionataDefault: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /prodotti/{id}:
+    get:
+      tags:
+        - Prodotti
+      summary: Supporto - Dettaglio prodotto pubblico
+      description: |
+        Endpoint pubblico. Il path reale nel codice usa il parametro `{id}`.
+        Restituisce un prodotto visibile con immagini e caratteristiche attive.
+      operationId: getProdottoById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificativo del prodotto.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Prodotto trovato.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdottoPubblicoResponse'
+              examples:
+                margherita:
+                  value:
+                    id: 1
+                    nome: Pizza Margherita
+                    descrizione: Pizza con pomodoro, mozzarella e basilico.
+                    prezzoBase: 6.50
+                    immagini: []
+                    caratteristiche:
+                      - id: 1
+                        nome: Impasto normale
+                        descrizione: Impasto classico
+                        differenzaPrezzo: 0.00
+                        selezionataDefault: true
+                      - id: 2
+                        nome: Impasto integrale
+                        descrizione: Impasto con farina integrale
+                        differenzaPrezzo: 1.00
+                        selezionataDefault: false
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /prodotti/{idProdotto}/caratteristiche:
+    get:
+      tags:
+        - Caratteristiche
+      summary: Supporto - Caratteristiche attive di un prodotto
+      description: |
+        Endpoint pubblico implementato dal resource caratteristiche. Restituisce
+        le caratteristiche attive associate al prodotto. La risposta non espone
+        campi dedicati per il nome o l'obbligatorietà del gruppo; la validazione
+        completa dei gruppi obbligatori è applicata server-side quando il
+        prodotto viene inserito in ordine.
+      operationId: getCaratteristicheByProdottoId
+      parameters:
+        - $ref: '#/components/parameters/IdProdottoPath'
+      responses:
+        '200':
+          description: Caratteristiche attive del prodotto.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Caratteristica'
+              examples:
+                margherita:
+                  value:
+                    - id: 1
+                      idProdotto: 1
+                      idGruppoCaratteristiche: 1
+                      nome: Impasto normale
+                      descrizione: Impasto classico
+                      differenzaPrezzo: 0.00
+                      selezionataDefault: true
+                      attiva: true
+                      creatoIl: '2026-05-16T10:00:00'
+                      aggiornatoIl: '2026-05-16T10:00:00'
+                    - id: 2
+                      idProdotto: 1
+                      idGruppoCaratteristiche: 1
+                      nome: Impasto integrale
+                      descrizione: Impasto con farina integrale
+                      differenzaPrezzo: 1.00
+                      selezionataDefault: false
+                      attiva: true
+                      creatoIl: '2026-05-16T10:00:00'
+                      aggiornatoIl: '2026-05-16T10:00:00'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /prodotti/{idProdotto}/caratteristiche/{idCaratteristica}:
+    delete:
+      tags:
+        - Caratteristiche
+      summary: 4 - Disattivazione caratteristica associata a prodotto
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `PROPRIETARIO`. La cancellazione è logica: la
+        caratteristica viene marcata non attiva.
+
+        Restituisce 404 anche quando la caratteristica esiste ma non è
+        associata attivamente al prodotto, perché la risorsa richiesta è
+        l'associazione prodotto-caratteristica attiva.
+      operationId: deleteCaratteristicaFromProdotto
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdProdottoPath'
+        - name: idCaratteristica
+          in: path
+          required: true
+          description: Identificativo della caratteristica attiva associata al prodotto.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 2
+      responses:
+        '204':
+          description: Caratteristica disattivata. Nessun contenuto restituito.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /prodotti/{idProdotto}/ingredienti:
+    get:
+      tags:
+        - Ingredienti
+      summary: 10 - Ingredienti di un prodotto
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `PERSONALE`, `PROPRIETARIO`. Restituisce gli ingredienti
+        attivi associati al prodotto e la quantità usata.
+      operationId: getIngredientiByProdottoId
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdProdottoPath'
+      responses:
+        '200':
+          description: Ingredienti del prodotto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngredientiProdottoResponse'
+              examples:
+                margherita:
+                  value:
+                    idProdotto: 1
+                    nomeProdotto: Pizza Margherita
+                    ingredienti:
+                      - id: 1
+                        nome: Farina
+                        quantita: 250.000
+                        unitaMisura: g
+                      - id: 2
+                        nome: Pomodoro
+                        quantita: 80.000
+                        unitaMisura: g
+                      - id: 3
+                        nome: Mozzarella
+                        quantita: 100.000
+                        unitaMisura: g
+                      - id: 4
+                        nome: Basilico
+                        quantita: 5.000
+                        unitaMisura: g
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini:
+    get:
+      tags:
+        - Ordini
+      summary: 8 - Lista ordini filtrata
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `PERSONALE`, `PROPRIETARIO`. Senza filtro `stato`
+        esclude gli ordini in stato `BOZZA`. I filtri `dataDa` e `dataA`
+        agiscono sul campo DAO `ordini.creato_il`, cioè la data di
+        creazione/inserimento del record.
+      operationId: getOrdini
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stato
+          in: query
+          required: false
+          description: Stato ordine da filtrare. Se assente, gli ordini BOZZA sono esclusi.
+          schema:
+            $ref: '#/components/schemas/StatoOrdine'
+          example: INSERITO
+        - name: dataDa
+          in: query
+          required: false
+          description: Data iniziale inclusa, formato YYYY-MM-DD, applicata a ordini.creato_il.
+          schema:
+            type: string
+            format: date
+          example: '2026-05-01'
+        - name: dataA
+          in: query
+          required: false
+          description: Data finale inclusa, formato YYYY-MM-DD, applicata a ordini.creato_il.
+          schema:
+            type: string
+            format: date
+          example: '2026-05-16'
+      responses:
+        '200':
+          description: Ordini filtrati.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrdineResponse'
+              examples:
+                operativi:
+                  value:
+                    - id: 10
+                      idCliente: 6
+                      stato: INSERITO
+                      prezzoTotale: 7.50
+                      minutiConsegnaStimati: 15
+                      indirizzoConsegnaSnapshot: Via Test 20
+                      cittaConsegnaSnapshot: L'Aquila
+                      capConsegnaSnapshot: '67100'
+                      telefonoConsegnaSnapshot: '+392222222222'
+                      creatoIl: '2026-05-16T12:00:00'
+                      confermatoIl: '2026-05-16T12:05:00'
+                      annullatoIl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Ordini
+      summary: Supporto - Creazione ordine in bozza
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`. Crea un ordine in stato `BOZZA` per il
+        cliente autenticato, copiando i dati di consegna dal suo profilo.
+      operationId: creaOrdine
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Ordine creato in bozza.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdineResponse'
+              examples:
+                bozza:
+                  value:
+                    id: 10
+                    idCliente: 6
+                    stato: BOZZA
+                    prezzoTotale: 0.00
+                    minutiConsegnaStimati: null
+                    indirizzoConsegnaSnapshot: Via Test 20
+                    cittaConsegnaSnapshot: L'Aquila
+                    capConsegnaSnapshot: '67100'
+                    telefonoConsegnaSnapshot: '+392222222222'
+                    creatoIl: '2026-05-16T12:00:00'
+                    confermatoIl: null
+                    annullatoIl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}/prodotti:
+    post:
+      tags:
+        - Ordini
+      summary: 5 - Inserimento prodotto in ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`. Vincolo di proprietà: il cliente può
+        modificare solo un proprio ordine. L'ordine deve essere in stato
+        `BOZZA`.
+
+        Le caratteristiche indicate devono essere attive, associate al prodotto
+        e senza duplicati. È ammessa al massimo una caratteristica per ciascun
+        gruppo. Se il prodotto ha gruppi caratteristiche obbligatori, deve
+        essere inviata una caratteristica valida per ogni gruppo obbligatorio;
+        in caso contrario viene restituito `400 Bad Request`.
+      operationId: aggiungiProdottoOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggiungiProdottoOrdineRequest'
+            examples:
+              pizzaIntegrale:
+                value:
+                  idProdotto: 1
+                  quantita: 1
+                  caratteristiche:
+                    - 2
+      responses:
+        '201':
+          description: Riga ordine creata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RigaOrdineResponse'
+              examples:
+                riga:
+                  value:
+                    idRigaOrdine: 25
+                    idProdotto: 1
+                    nomeProdotto: Pizza Margherita
+                    quantita: 1
+                    prezzoBase: 6.50
+                    minutiPreparazione: 15
+                    caratteristiche:
+                      - idCaratteristica: 2
+                        nome: Impasto integrale
+                        differenzaPrezzo: 1.00
+                    subtotaleRiga: 7.50
+        '400':
+          description: Richiesta non valida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                gruppoObbligatorio:
+                  summary: Gruppo obbligatorio mancante
+                  value:
+                    errore: "Seleziona una caratteristica per il gruppo obbligatorio: Impasto."
+                duplicate:
+                  summary: Caratteristiche duplicate
+                  value:
+                    errore: Caratteristiche duplicate nella richiesta
+                stessoGruppo:
+                  summary: Più caratteristiche nello stesso gruppo
+                  value:
+                    errore: Una sola caratteristica può essere scelta per ciascun gruppo
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Ordini
+      summary: 13 - Prodotti presenti in un ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`. Vincolo di proprietà: il cliente può leggere
+        solo i propri ordini. Restituisce le righe ordine e le caratteristiche
+        selezionate.
+      operationId: getProdottiOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      responses:
+        '200':
+          description: Righe prodotto dell'ordine.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdottiOrdineResponse'
+              examples:
+                prodotti:
+                  value:
+                    idOrdine: 10
+                    prodotti:
+                      - idRigaOrdine: 25
+                        idProdotto: 1
+                        nomeProdotto: Pizza Margherita
+                        quantita: 1
+                        prezzoBase: 6.50
+                        minutiPreparazione: 15
+                        caratteristiche:
+                          - idCaratteristica: 2
+                            nome: Impasto integrale
+                            differenzaPrezzo: 1.00
+                        subtotaleRiga: 7.50
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}/totale:
+    get:
+      tags:
+        - Ordini
+      summary: 6 - Totale ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`. Vincolo di proprietà: il cliente può
+        calcolare il totale solo dei propri ordini. Calcola il totale dalle
+        righe ordine.
+      operationId: getTotaleOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      responses:
+        '200':
+          description: Totale calcolato.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotaleOrdineResponse'
+              examples:
+                totale:
+                  value:
+                    idOrdine: 10
+                    totale: 7.50
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}/tempo-consegna:
+    get:
+      tags:
+        - Ordini
+      summary: 6 - Tempo stimato ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`. Vincolo di proprietà: il cliente può
+        calcolare il tempo stimato solo dei propri ordini. Il tempo consegna è
+        la somma dei tempi di preparazione delle righe, calcolata moltiplicando
+        `minuti_preparazione_snapshot` per la quantità di ogni riga ordine.
+      operationId: getTempoConsegnaOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      responses:
+        '200':
+          description: Tempo stimato in minuti.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempoConsegnaOrdineResponse'
+              examples:
+                tempo:
+                  value:
+                    idOrdine: 10
+                    minutiConsegnaStimati: 15
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}:
+    delete:
+      tags:
+        - Ordini
+      summary: 12 - Annullamento logico ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`. Vincolo di proprietà: il cliente può
+        annullare solo un proprio ordine. L'ordine è annullabile solo in stato
+        `BOZZA` o `INSERITO`. L'operazione non cancella fisicamente il record:
+        imposta lo stato ad `ANNULLATO`, valorizza `annullato_il` e registra lo
+        storico.
+      operationId: annullaOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      responses:
+        '200':
+          description: Ordine annullato logicamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdineResponse'
+              examples:
+                annullato:
+                  value:
+                    id: 10
+                    idCliente: 6
+                    stato: ANNULLATO
+                    prezzoTotale: 7.50
+                    minutiConsegnaStimati: 15
+                    indirizzoConsegnaSnapshot: Via Test 20
+                    cittaConsegnaSnapshot: L'Aquila
+                    capConsegnaSnapshot: '67100'
+                    telefonoConsegnaSnapshot: '+392222222222'
+                    creatoIl: '2026-05-16T12:00:00'
+                    confermatoIl: null
+                    annullatoIl: '2026-05-16T12:03:00'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}/conferma:
+    post:
+      tags:
+        - Ordini
+      summary: Supporto - Conferma ordine in bozza
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`, `PROPRIETARIO`. Vincolo di proprietà: il
+        `CLIENTE` può confermare solo un proprio ordine; il `PROPRIETARIO` può
+        confermare qualunque ordine esistente. Conferma solo ordini in stato
+        `BOZZA` e li porta a `INSERITO`.
+      operationId: confermaOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      responses:
+        '200':
+          description: Ordine confermato.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdineResponse'
+              examples:
+                confermato:
+                  value:
+                    id: 10
+                    idCliente: 6
+                    stato: INSERITO
+                    prezzoTotale: 7.50
+                    minutiConsegnaStimati: 15
+                    indirizzoConsegnaSnapshot: Via Test 20
+                    cittaConsegnaSnapshot: L'Aquila
+                    capConsegnaSnapshot: '67100'
+                    telefonoConsegnaSnapshot: '+392222222222'
+                    creatoIl: '2026-05-16T12:00:00'
+                    confermatoIl: '2026-05-16T12:05:00'
+                    annullatoIl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}/stato:
+    put:
+      tags:
+        - Ordini
+      summary: 7 - Aggiornamento stato ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `PERSONALE`, `PROPRIETARIO`. Sono ammesse solo
+        transizioni operative progressive: `INSERITO -> IN_PREPARAZIONE ->
+        PRONTO -> IN_CONSEGNA -> CONSEGNATO`.
+      operationId: aggiornaStatoOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggiornaStatoOrdineRequest'
+            examples:
+              inPreparazione:
+                value:
+                  nuovoStato: IN_PREPARAZIONE
+      responses:
+        '200':
+          description: Stato ordine aggiornato.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdineResponse'
+              examples:
+                aggiornato:
+                  value:
+                    id: 10
+                    idCliente: 6
+                    stato: IN_PREPARAZIONE
+                    prezzoTotale: 7.50
+                    minutiConsegnaStimati: 15
+                    indirizzoConsegnaSnapshot: Via Test 20
+                    cittaConsegnaSnapshot: L'Aquila
+                    capConsegnaSnapshot: '67100'
+                    telefonoConsegnaSnapshot: '+392222222222'
+                    creatoIl: '2026-05-16T12:00:00'
+                    confermatoIl: '2026-05-16T12:05:00'
+                    annullatoIl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /ordini/{idOrdine}/operatori:
+    get:
+      tags:
+        - Ordini
+      summary: 11 - Operatori coinvolti in un ordine
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `PERSONALE`, `PROPRIETARIO`. Restituisce gli utenti di
+        ruolo `PERSONALE` o `PROPRIETARIO` presenti nello storico stati
+        dell'ordine.
+      operationId: getOperatoriOrdine
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdOrdinePath'
+      responses:
+        '200':
+          description: Operatori associati allo storico dell'ordine.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatoriOrdineResponse'
+              examples:
+                operatori:
+                  value:
+                    idOrdine: 10
+                    operatori:
+                      - idUtente: 3
+                        username: test_staff
+                        nome: Test
+                        cognome: Staff
+                        ruolo: PERSONALE
+                        cambiStato:
+                          - statoPrecedente: INSERITO
+                            statoNuovo: IN_PREPARAZIONE
+                            cambiatoIl: '2026-05-16T12:10:00'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /utenti/{idUtente}/ordini:
+    get:
+      tags:
+        - Utenti
+      summary: 9 - Ordini di un utente
+      description: |
+        Endpoint protetto: richiede token `Authorization: Bearer <token>`.
+        Ruoli ammessi: `CLIENTE`, `PROPRIETARIO`. Vincolo di proprietà: un
+        `CLIENTE` può leggere solo i propri ordini; un `PROPRIETARIO` può
+        leggere gli ordini di qualunque utente esistente. Il ruolo `PERSONALE`
+        non è autorizzato.
+      operationId: getOrdiniUtente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: idUtente
+          in: path
+          required: true
+          description: Identificativo dell'utente cliente di cui recuperare gli ordini.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 6
+      responses:
+        '200':
+          description: Ordini dell'utente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrdineResponse'
+              examples:
+                ordiniCliente:
+                  value:
+                    - id: 10
+                      idCliente: 6
+                      stato: BOZZA
+                      prezzoTotale: 7.50
+                      minutiConsegnaStimati: 15
+                      indirizzoConsegnaSnapshot: Via Test 20
+                      cittaConsegnaSnapshot: L'Aquila
+                      capConsegnaSnapshot: '67100'
+                      telefonoConsegnaSnapshot: '+392222222222'
+                      creatoIl: '2026-05-16T12:00:00'
+                      confermatoIl: null
+                      annullatoIl: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /health:
+    get:
+      tags:
+        - Diagnostica
+      summary: Diagnostica applicativa
+      description: |
+        Endpoint pubblico diagnostico. Restituisce informazioni minime sullo
+        stato dell'API Jersey.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Stato applicativo.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - applicazione
+                  - tipo
+                  - stato
+                  - timestamp
+                properties:
+                  applicazione:
+                    type: string
+                  tipo:
+                    type: string
+                  stato:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+              examples:
+                ok:
+                  value:
+                    applicazione: MasterEat
+                    tipo: Jersey REST API
+                    stato: OK
+                    timestamp: '2026-05-26T16:00:00Z'
+  /db-health:
+    get:
+      tags:
+        - Diagnostica
+      summary: Diagnostica database
+      description: |
+        Endpoint pubblico diagnostico. Verifica la disponibilità della
+        connessione JDBC verso il database MySQL.
+      operationId: getDatabaseHealth
+      responses:
+        '200':
+          description: Connessione database disponibile.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - applicazione
+                  - database
+                  - stato
+                properties:
+                  applicazione:
+                    type: string
+                  database:
+                    type: string
+                  stato:
+                    type: string
+              examples:
+                connesso:
+                  value:
+                    applicazione: MasterEat
+                    database: mastereat
+                    stato: CONNESSO
+        '500':
+          description: Connessione database non disponibile.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - applicazione
+                  - database
+                  - stato
+                  - messaggio
+                properties:
+                  applicazione:
+                    type: string
+                  database:
+                    type: string
+                  stato:
+                    type: string
+                  messaggio:
+                    type: string
+              examples:
+                errore:
+                  value:
+                    applicazione: MasterEat
+                    database: mastereat
+                    stato: ERRORE
+                    messaggio: Errore di connessione al database
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: internal-token
+      description: "Token interno restituito da POST /auth/login, inviato come `Authorization: Bearer <token>`."
+  parameters:
+    IdOrdinePath:
+      name: idOrdine
+      in: path
+      required: true
+      description: Identificativo dell'ordine.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 10
+    IdProdottoPath:
+      name: idProdotto
+      in: path
+      required: true
+      description: Identificativo del prodotto.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 1
+  responses:
+    BadRequest:
+      description: Richiesta non valida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            errore:
+              value:
+                errore: Parametro non valido
+    Unauthorized:
+      description: Token mancante, scaduto o non valido, oppure credenziali non valide.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            errore:
+              value:
+                errore: Token mancante o non valido
+    Forbidden:
+      description: Utente autenticato ma non autorizzato per ruolo o proprietà della risorsa.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            errore:
+              value:
+                errore: Operazione consentita solo a PERSONALE o PROPRIETARIO
+    NotFound:
+      description: Risorsa non trovata.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            errore:
+              value:
+                errore: Risorsa non trovata
+    InternalServerError:
+      description: Errore interno.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            errore:
+              value:
+                errore: Errore interno
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: test_cliente
+        password:
+          type: string
+          format: password
+          example: password
+    LoginResponse:
+      type: object
+      required:
+        - token
+        - idUtente
+        - username
+        - ruolo
+      properties:
+        token:
+          type: string
+          description: Token interno opaco.
+        idUtente:
+          type: integer
+          format: int64
+        username:
+          type: string
+        ruolo:
+          $ref: '#/components/schemas/RuoloUtente'
+    ErrorResponse:
+      type: object
+      required:
+        - errore
+      properties:
+        errore:
+          type: string
+          example: Token mancante o non valido
+    MenuPubblicoResponse:
+      type: object
+      required:
+        - categorie
+        - prodottiSenzaCategoria
+      properties:
+        categorie:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoriaMenuResponse'
+        prodottiSenzaCategoria:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProdottoPubblicoResponse'
+    CategoriaMenuResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - prodotti
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        descrizione:
+          type: string
+          nullable: true
+        prodotti:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProdottoPubblicoResponse'
+    ProdottoPubblicoResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - descrizione
+        - prezzoBase
+        - immagini
+        - caratteristiche
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        descrizione:
+          type: string
+        prezzoBase:
+          type: number
+          format: double
+          minimum: 0
+        immagini:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImmagineProdottoPubblicaResponse'
+        caratteristiche:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaratteristicaPubblicaResponse'
+    ImmagineProdottoPubblicaResponse:
+      type: object
+      required:
+        - id
+        - url
+        - principale
+      properties:
+        id:
+          type: integer
+          format: int64
+        url:
+          type: string
+          nullable: true
+          example: /uploads/prodotti/margherita.webp
+        testoAlternativo:
+          type: string
+          nullable: true
+        principale:
+          type: boolean
+    CaratteristicaPubblicaResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - differenzaPrezzo
+        - selezionataDefault
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        descrizione:
+          type: string
+          nullable: true
+        differenzaPrezzo:
+          type: number
+          format: double
+        selezionataDefault:
+          type: boolean
+    Caratteristica:
+      type: object
+      required:
+        - id
+        - idProdotto
+        - nome
+        - differenzaPrezzo
+        - selezionataDefault
+        - attiva
+      properties:
+        id:
+          type: integer
+          format: int64
+        idProdotto:
+          type: integer
+          format: int64
+        idGruppoCaratteristiche:
+          type: integer
+          format: int64
+          nullable: true
+        nome:
+          type: string
+        descrizione:
+          type: string
+          nullable: true
+        differenzaPrezzo:
+          type: number
+          format: double
+        selezionataDefault:
+          type: boolean
+        attiva:
+          type: boolean
+        creatoIl:
+          type: string
+          nullable: true
+          example: '2026-05-16T10:00:00'
+        aggiornatoIl:
+          type: string
+          nullable: true
+          example: '2026-05-16T10:00:00'
+    AggiungiProdottoOrdineRequest:
+      type: object
+      required:
+        - idProdotto
+        - quantita
+      properties:
+        idProdotto:
+          type: integer
+          format: int64
+          minimum: 1
+        quantita:
+          type: integer
+          format: int32
+          minimum: 1
+        caratteristiche:
+          type: array
+          description: |
+            Identificativi di caratteristiche attive del prodotto, senza
+            duplicati. È ammessa al massimo una caratteristica per gruppo. Se
+            il prodotto ha gruppi obbligatori, l'array deve includere una
+            caratteristica valida per ogni gruppo obbligatorio; per prodotti
+            senza gruppi obbligatori può essere vuoto o omesso.
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          default: []
+    AggiornaStatoOrdineRequest:
+      type: object
+      required:
+        - nuovoStato
+      properties:
+        nuovoStato:
+          $ref: '#/components/schemas/StatoOrdine'
+    OrdineResponse:
+      type: object
+      required:
+        - id
+        - idCliente
+        - stato
+        - prezzoTotale
+        - indirizzoConsegnaSnapshot
+        - cittaConsegnaSnapshot
+        - telefonoConsegnaSnapshot
+      properties:
+        id:
+          type: integer
+          format: int64
+        idCliente:
+          type: integer
+          format: int64
+        stato:
+          $ref: '#/components/schemas/StatoOrdine'
+        prezzoTotale:
+          type: number
+          format: double
+          minimum: 0
+        minutiConsegnaStimati:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+        indirizzoConsegnaSnapshot:
+          type: string
+        cittaConsegnaSnapshot:
+          type: string
+        capConsegnaSnapshot:
+          type: string
+          nullable: true
+        telefonoConsegnaSnapshot:
+          type: string
+        creatoIl:
+          type: string
+          nullable: true
+          example: '2026-05-16T12:00:00'
+        confermatoIl:
+          type: string
+          nullable: true
+          example: '2026-05-16T12:05:00'
+        annullatoIl:
+          type: string
+          nullable: true
+          example: '2026-05-16T12:03:00'
+    RigaOrdineResponse:
+      type: object
+      required:
+        - idRigaOrdine
+        - idProdotto
+        - nomeProdotto
+        - quantita
+        - prezzoBase
+        - minutiPreparazione
+        - caratteristiche
+        - subtotaleRiga
+      properties:
+        idRigaOrdine:
+          type: integer
+          format: int64
+        idProdotto:
+          type: integer
+          format: int64
+        nomeProdotto:
+          type: string
+        quantita:
+          type: integer
+          format: int32
+          minimum: 1
+        prezzoBase:
+          type: number
+          format: double
+          minimum: 0
+        minutiPreparazione:
+          type: integer
+          format: int32
+          minimum: 1
+        caratteristiche:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaratteristicaOrdineResponse'
+        subtotaleRiga:
+          type: number
+          format: double
+          minimum: 0
+    CaratteristicaOrdineResponse:
+      type: object
+      required:
+        - idCaratteristica
+        - nome
+        - differenzaPrezzo
+      properties:
+        idCaratteristica:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        differenzaPrezzo:
+          type: number
+          format: double
+    ProdottiOrdineResponse:
+      type: object
+      required:
+        - idOrdine
+        - prodotti
+      properties:
+        idOrdine:
+          type: integer
+          format: int64
+        prodotti:
+          type: array
+          items:
+            $ref: '#/components/schemas/RigaOrdineResponse'
+    TotaleOrdineResponse:
+      type: object
+      required:
+        - idOrdine
+        - totale
+      properties:
+        idOrdine:
+          type: integer
+          format: int64
+        totale:
+          type: number
+          format: double
+          minimum: 0
+    TempoConsegnaOrdineResponse:
+      type: object
+      required:
+        - idOrdine
+        - minutiConsegnaStimati
+      properties:
+        idOrdine:
+          type: integer
+          format: int64
+        minutiConsegnaStimati:
+          type: integer
+          format: int32
+          minimum: 0
+    IngredientiProdottoResponse:
+      type: object
+      required:
+        - idProdotto
+        - nomeProdotto
+        - ingredienti
+      properties:
+        idProdotto:
+          type: integer
+          format: int64
+        nomeProdotto:
+          type: string
+        ingredienti:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredienteProdottoResponse'
+    IngredienteProdottoResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - quantita
+        - unitaMisura
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        quantita:
+          type: number
+          format: double
+          minimum: 0
+        unitaMisura:
+          type: string
+    OperatoriOrdineResponse:
+      type: object
+      required:
+        - idOrdine
+        - operatori
+      properties:
+        idOrdine:
+          type: integer
+          format: int64
+        operatori:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperatoreOrdineResponse'
+    OperatoreOrdineResponse:
+      type: object
+      required:
+        - idUtente
+        - username
+        - ruolo
+        - cambiStato
+      properties:
+        idUtente:
+          type: integer
+          format: int64
+        username:
+          type: string
+        nome:
+          type: string
+          nullable: true
+        cognome:
+          type: string
+          nullable: true
+        ruolo:
+          $ref: '#/components/schemas/RuoloUtente'
+        cambiStato:
+          type: array
+          items:
+            $ref: '#/components/schemas/CambioStatoOperatoreResponse'
+    CambioStatoOperatoreResponse:
+      type: object
+      required:
+        - statoNuovo
+        - cambiatoIl
+      properties:
+        statoPrecedente:
+          allOf:
+            - $ref: '#/components/schemas/StatoOrdine'
+          nullable: true
+        statoNuovo:
+          $ref: '#/components/schemas/StatoOrdine'
+        cambiatoIl:
+          type: string
+          nullable: true
+          example: '2026-05-16T12:10:00'
+    StatoOrdine:
+      type: string
+      enum:
+        - BOZZA
+        - INSERITO
+        - IN_PREPARAZIONE
+        - PRONTO
+        - IN_CONSEGNA
+        - CONSEGNATO
+        - ANNULLATO
+    RuoloUtente:
+      type: string
+      enum:
+        - CLIENTE
+        - PERSONALE
+        - PROPRIETARIO

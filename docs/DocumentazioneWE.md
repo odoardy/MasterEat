@@ -81,7 +81,7 @@ La parte WE realizza un'applicazione navigabile direttamente da browser, senza f
 
 ## 3. Tecnologie e dipendenze
 
-Le tecnologie riportate derivano da `MasterEat/pom.xml`, `WEB-INF/web.xml`, dagli asset web e dagli script SQL.
+Le tecnologie riportate derivano da `pom.xml`, `WEB-INF/web.xml`, dagli asset web e dagli script SQL.
 
 | Area | Tecnologia / dipendenza | Uso nel progetto |
 | --- | --- | --- |
@@ -93,7 +93,7 @@ Le tecnologie riportate derivano da `MasterEat/pom.xml`, `WEB-INF/web.xml`, dagl
 | Server | Jersey 3.1.11 | Parte REST separata, mappata su `/api/*`. |
 | Server | BCrypt | Hashing password tramite `org.mindrot:jbcrypt:0.4`. |
 | Server | Jakarta Mail / Angus Mail 2.0.3 | Invio email SMTP locale di conferma e consegna ordine. |
-| Database | MySQL | Database relazionale creato dagli script in `MasterEat/database/`. |
+| Database | MySQL | Database relazionale creato dagli script in `database/`. |
 | Database | JNDI DataSource | Accesso JDBC tramite `java:comp/env/jdbc/MasterEatDB`. |
 | Client | HTML5 | Struttura semantica delle pagine renderizzate. |
 | Client | CSS | Layout responsive con Grid, Flexbox e media query. |
@@ -137,7 +137,7 @@ La parte riguardante la web application e la parte riguardante le API convivono 
 
 ## 6. Configurazione Tomcat, `web.xml` e DataSource JNDI
 
-Il file `MasterEat/src/main/webapp/WEB-INF/web.xml` definisce gli elementi container-level:
+Il file `src/main/webapp/WEB-INF/web.xml` definisce gli elementi container-level:
 
 - welcome file `index.html`, che reindirizza alla homepage `/home`;
 - servlet Jersey `MasterEatApi`, caricata all'avvio e mappata su `/api/*`;
@@ -153,7 +153,7 @@ I controller non sono elencati uno per uno in `web.xml` perché usano annotazion
 $CATALINA_BASE/conf/Catalina/localhost/MasterEat.xml
 ```
 
-Il MySQL Connector/J deve essere disponibile nella `lib` del Tomcat usato per creare il pool JNDI. La guida operativa con l'esempio XML completo resta in `MasterEat/database/README.md`.
+Il MySQL Connector/J deve essere disponibile nella `lib` del Tomcat usato per creare il pool JNDI. La guida operativa con l'esempio XML completo resta in `database/README.md`.
 
 ## 7. Struttura directory WE
 
@@ -161,14 +161,14 @@ I percorsi principali della parte WE sono:
 
 | Percorso | Contenuto |
 | --- | --- |
-| `MasterEat/src/main/java/it/univaq/mastereat/controller/web` | Servlet controller pubblici, cliente, staff, proprietario e servlet immagini. |
-| `MasterEat/src/main/java/it/univaq/mastereat/controller/web/filter` | Filtro `AuthenticationFilter` per aree riservate WE. |
-| `MasterEat/src/main/resources/templates` | Template FreeMarker caricati dal classpath. |
-| `MasterEat/src/main/webapp/assets/css` | CSS base, layout, componenti, form, pagine e responsive. |
-| `MasterEat/src/main/webapp/assets/js` | JavaScript vanilla globale. |
-| `MasterEat/src/main/webapp/assets/img` | Logo, favicon e placeholder immagini. |
-| `MasterEat/src/main/webapp/WEB-INF` | Configurazione web application. |
-| `MasterEat/database` | Schema SQL, seed utenti e seed menù demo. |
+| `src/main/java/it/univaq/mastereat/controller/web` | Servlet controller pubblici, cliente, staff, proprietario e servlet immagini. |
+| `src/main/java/it/univaq/mastereat/controller/web/filter` | Filtro `AuthenticationFilter` per aree riservate WE. |
+| `src/main/resources/templates` | Template FreeMarker caricati dal classpath. |
+| `src/main/webapp/assets/css` | CSS base, layout, componenti, form, pagine e responsive. |
+| `src/main/webapp/assets/js` | JavaScript vanilla globale. |
+| `src/main/webapp/assets/img` | Logo, favicon e placeholder immagini. |
+| `src/main/webapp/WEB-INF` | Configurazione web application. |
+| `database` | Schema SQL, seed utenti e seed menù demo. |
 | `docs` | Documentazione SWA/WE, OpenAPI e diagrammi. |
 
 Le immagini prodotto caricate non vengono salvate dentro il repository: `ProductImageStorage` usa per default una directory esterna sotto la home utente, sovrascrivibile con system property.
@@ -742,10 +742,10 @@ Su un database creato da zero con questi script è presente un solo proprietario
 ## 26. Istruzioni rapide di esecuzione
 
 1. Avviare MySQL.
-2. Eseguire gli script in `MasterEat/database/` nell'ordine `01_schema.sql`, `02_seed_core_users.sql`, `03_seed_demo_menu.sql`.
+2. Eseguire gli script in `database/` nell'ordine `01_schema.sql`, `02_seed_core_users.sql`, `03_seed_demo_menu.sql`.
 3. Configurare in Tomcat il DataSource JNDI `jdbc/MasterEatDB`.
 4. Copiare MySQL Connector/J nella `lib` di Tomcat se necessario per il pool JNDI.
-5. Generare il WAR dalla directory `MasterEat/`:
+5. Generare il WAR dalla root del repository:
 
 ```bash
 mvn -q -DskipTests clean package

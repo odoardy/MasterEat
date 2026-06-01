@@ -94,11 +94,11 @@ Le tecnologie riportate derivano dal `pom.xml`, dallo schema SQL e dal client st
 | Server | Jackson | Usato attraverso il provider JSON di Jersey. La property `jackson.version` è presente, ma il `pom.xml` non dichiara una dipendenza Jackson diretta separata. |
 | Server | org.mindrot:jbcrypt:0.4 | Hashing delle password utente con BCrypt, salt per hash e costo adattivo. |
 | Server | MySQL Connector/J 9.7.0 | Driver JDBC per l'accesso a MySQL. |
-| Database | MySQL | Database relazionale definito dagli script SQL nella cartella `MasterEat/database/`. |
+| Database | MySQL | Database relazionale definito dagli script SQL nella cartella `database/`. |
 | Client | HTML, CSS, JavaScript vanilla | Client statico in `src/main/webapp/swa-client/`. |
 | Client | Fetch API | Invio delle richieste HTTP dal client SWA. |
 | Client | Nessun framework frontend | Non sono presenti React, Vite o librerie frontend. |
-| Documentazione | OpenAPI 3.0.3 | Specifica in `docs/openapi.yaml`. |
+| Documentazione | OpenAPI 3.0.3 | Specifica in `docs/OpenAPI.yaml`. |
 | Documentazione | Swagger Editor | Strumento indicato per lettura e validazione della specifica. |
 
 ## 4. Architettura generale
@@ -125,7 +125,7 @@ Le classi `Resource` nel package `it.univaq.mastereat.api.resources` espongono g
 
 I `DTO` rappresentano gli oggetti usati per request e response JSON. I `model` rappresentano le entità interne del dominio e riflettono più da vicino la struttura dati applicativa. Le classi in `util` e `config` gestiscono aspetti trasversali: token, hash password, connessione al database e configurazione JAX-RS. La classe `MasterEatApplication` registra il package delle risorse REST e il supporto Jackson; il mapping `/api/*` è configurato in `WEB-INF/web.xml`.
 
-Le API condividono il DataSource JNDI dell'applicazione (`jdbc/MasterEatDB`). La configurazione Tomcat completa è descritta in `docs/DocumentazioneWE.md`, mentre l'esempio operativo è disponibile in `MasterEat/database/README.md`.
+Le API condividono il DataSource JNDI dell'applicazione (`jdbc/MasterEatDB`). La configurazione Tomcat completa è descritta in `docs/DocumentazioneWE.md`, mentre l'esempio operativo è disponibile in `database/README.md`.
 
 Il filtro `it.univaq.mastereat.api.CorsFilter` è un `jakarta.servlet.Filter` annotato con `@WebFilter(filterName = "CorsFilter", urlPatterns = "/api/*")`. Intercetta solo le API REST/SWA pubblicate sotto `/api/*`: la webapp session-based non passa da questo filtro e mantiene il proprio comportamento separato.
 
@@ -313,7 +313,7 @@ Il tempo stimato è calcolato in modo prototipale come somma dei tempi di prepar
 La specifica si trova in:
 
 ```text
-docs/openapi.yaml
+docs/OpenAPI.yaml
 ```
 
 Il formato usato è OpenAPI `3.0.3`. Il file è consultabile e validabile con Swagger Editor e contiene:
@@ -331,7 +331,7 @@ Il formato usato è OpenAPI `3.0.3`. Il file è consultabile e validabile con Sw
 Per aprire la specifica:
 
 1. aprire `https://editor.swagger.io/`;
-2. copiare e incollare il contenuto di `docs/openapi.yaml`;
+2. copiare e incollare il contenuto di `docs/OpenAPI.yaml`;
 3. in alternativa, importare il file se lo strumento lo consente.
 
 ## 16. Client JavaScript SWA
@@ -530,7 +530,7 @@ Il codice `409 Conflict` non risulta usato né documentato nella specifica OpenA
 
 1. Avviare MySQL.
 2. Verificare che lo schema del database e i dati seed siano stati caricati dagli script presenti nella cartella `database`.
-3. Verificare il DataSource JNDI condiviso `jdbc/MasterEatDB` secondo `docs/DocumentazioneWE.md` e `MasterEat/database/README.md`.
+3. Verificare il DataSource JNDI condiviso `jdbc/MasterEatDB` secondo `docs/DocumentazioneWE.md` e `database/README.md`.
 4. Avviare Tomcat 11.
 5. Effettuare il deploy del WAR `MasterEat`.
 6. Usare come base API:
@@ -545,7 +545,7 @@ http://localhost:8080/MasterEat/api
 http://localhost:8080/MasterEat/swa-client/
 ```
 
-8. Consultare la specifica OpenAPI caricando `docs/openapi.yaml` in Swagger Editor.
+8. Consultare la specifica OpenAPI caricando `docs/OpenAPI.yaml` in Swagger Editor.
 9. Per verificare la compilazione:
 
 ```bash

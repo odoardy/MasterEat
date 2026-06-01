@@ -12,9 +12,7 @@ info:
     cookie.
 
     Il login restituisce un token interno. Gli endpoint protetti richiedono
-    l'header `Authorization: Bearer <token>`. Il codice accetta anche l'header
-    `Authentication` con il token non prefissato, ma `Authorization` è il
-    formato documentato.
+    l'header `Authorization: Bearer <token>`.
 
     Gli stati ordine gestiti sono `BOZZA`, `INSERITO`, `IN_PREPARAZIONE`,
     `PRONTO`, `IN_CONSEGNA`, `CONSEGNATO`, `ANNULLATO`. Le transizioni

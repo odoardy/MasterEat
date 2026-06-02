@@ -1,0 +1,22 @@
+body {
+    max-width: 1200px;
+    padding: 40px 56px;
+}
+
+@media (min-width: 901px) {
+    table {
+        display: table;
+        width: 100%;
+    }
+}
+
+@media (max-width: 900px) {
+    body {
+        padding: 20px;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
